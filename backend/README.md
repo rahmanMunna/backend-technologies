@@ -26,22 +26,37 @@ src/
 
 Request flow: **Controller** (HTTP) → **Service** (logic) → **Repository** (DB).
 
+## Environment files
+
+| File                   | Used by                              | In git? |
+| ---------------------- | ------------------------------------ | ------- |
+| `../.env`              | `docker-compose.yml` (repo root)     | no      |
+| `../.env.example`      | template for the file above          | yes     |
+| `backend/.env`         | running the API locally (`npm run …`) | no      |
+| `backend/.env.example` | template for the file above          | yes     |
+
 ## Run with Docker (easiest)
 
+Run these from the **repo root** (where `docker-compose.yml` lives):
+
 ```bash
-docker compose up -d --build        # starts Postgres + API, runs migrations
+cp .env.example .env                 # first time only, then edit the values
+docker compose up -d --build         # starts Postgres + Redis + API, runs migrations
 docker compose exec api npm run seed # optional: insert sample data
 docker compose logs -f api           # watch logs
-docker compose down                  # stop (add -v to also wipe the DB)
+docker compose down                  # stop (add -v to also wipe the data)
 ```
 
 API: http://localhost:3000/api
 
-## Run locally (DB in Docker, API on your machine)
+## Run locally (DB + Redis in Docker, API on your machine)
 
 ```bash
-cp .env.example .env
-docker compose up -d db
+# from the repo root
+docker compose up -d db redis
+
+# from backend/
+cp .env.example .env                 # first time only
 npm install
 npm run build
 npm run migration:run
@@ -59,6 +74,16 @@ npm run migration:create -- src/database/migrations/AddPhoneToUsers  # new empty
 npm run build && npm run migration:run                                # apply pending
 npm run build && npm run migration:revert                             # undo the last one
 ```
+
+## API docs (Scalar)
+
+- Interactive docs: http://localhost:3000/docs
+- Raw OpenAPI JSON: http://localhost:3000/openapi.json (import into Postman, etc.)
+
+The spec is generated from `@nestjs/swagger` decorators (`@ApiProperty` on
+DTOs and entities, `@ApiOperation` / `@Api*Response` on controller routes) and
+rendered by Scalar. Setup lives in `src/config/api-docs.ts`. When you add a new
+endpoint or field, add the matching decorator and it shows up in the docs.
 
 ## Endpoints
 
